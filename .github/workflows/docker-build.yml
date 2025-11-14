@@ -1,10 +1,14 @@
-name: Build Docker images (step-2)
+name: Build Docker images (step-3)
 
 on:
   push:
     branches:
       - main
       - master
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build:
@@ -25,3 +29,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:backend-${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:backend-latest
