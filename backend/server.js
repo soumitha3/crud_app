@@ -25,9 +25,9 @@ app.get('/students', (req, res) => res.json(students));
 // POST create
 app.post('/students', (req, res) => {
   const { name, age, course } = req.body;
-  if (!name || age === undefined || !course) {
-    return res.status(400).json({ message: 'name, age, and course are required' });
-  }
+  if (!name || isNaN(age) || age <= 0 || !course) {
+  return res.status(400).json({ message: 'Provide valid name, positive numeric age, and course' });
+}
   const student = { id: nextId++, name, age: Number(age), course };
   students.push(student);
   res.status(201).json(student);
