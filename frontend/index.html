@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Student Management (Simple)</title>
+  <style>
+    body{font-family: Arial; max-width:800px; margin:20px auto}
+    input, button {padding:6px; margin:4px}
+    table {width:100%; border-collapse: collapse; margin-top:12px}
+    th, td {border:1px solid #ddd; padding:8px; text-align:left}
+  </style>
+</head>
+<body>
+  <h2>Student Management (Simple Frontend)</h2>
+
+  <div>
+    <input id="name" placeholder="Name">
+    <input id="age" type="number" placeholder="Age" style="width:80px">
+    <input id="course" placeholder="Course">
+    <button id="addBtn">Add Student</button>
+  </div>
+
+  <div id="msg" style="color:green; margin-top:8px"></div>
+
+  <table id="studentsTable">
+    <thead><tr><th>ID</th><th>Name</th><th>Age</th><th>Course</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const api = (path, opts) => fetch(path, opts).then(r => {
+      if (r.status === 204) return null;
+      return r.json();
+    });
+
+    async function load() {
+      const students = await api('/students');
+      const tbody = document.querySelector('#studentsTable tbody');
+      tbody.innerHTML = '';
+      students.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${s.id}</td>
+                        <td><input data-id="${s.id}" data-field="name" value="${s.name}"></td>
+                        <td><input data-id="${s.id}" data-field="age" type="number" value="${s.age}" style="width:70px"></td>
+                        <td><input data-id="${s.id}" data-field="course" value="${s.course}"></td>
+                        <td>
+                          <button data-action="save" data-id="${s.id}">Save</button>
+                          <button data-action="delete" data-id="${s.id}">Delete</button>
+                        </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('addBtn').addEventListener('click', async () => {
+      const name = document.getElementById('name').value.trim();
+      const age = document.getElementById('age').value;
+      const course = document.getElementById('course').value.trim();
+      const res = await api('/students', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name, age: Number(age), course })
+      }).catch(e => { document.getElementById('msg').textContent = 'Error'; });
+      document.getElementById('msg').textContent = 'Student added';
+      document.getElementById('name').value=''; document.getElementById('age').value=''; document.getElementById('course').value='';
+      load();
+    });
+
+    document.querySelector('#studentsTable').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      if (action === 'delete') {
+        await api('/students/' + id, { method: 'DELETE' });
+        document.getElementById('msg').textContent = 'Deleted';
+        load();
+      } else if (action === 'save') {
+        const row = btn.closest('tr');
+        const name = row.querySelector('input[data-field="name"]').value;
+        const age = row.querySelector('input[data-field="age"]').value;
+        const course = row.querySelector('input[data-field="course"]').value;
+        await api('/students/' + id, {
+          method: 'PATCH',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ name, age: Number(age), course })
+        });
+        document.getElementById('msg').textContent = 'Saved';
+        load();
+      }
+    });
+
+    // initial load
+    load();
+  </script>
+</body>
+</html>
